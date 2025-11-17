@@ -17,7 +17,7 @@ This project is broken into two parts:
 
 ### Step 1: Collect the Data (The Cron Job)
 
-This analyzer is designed to read the JSON output from **[sindresorhus/fast-cli](https://www.google.com/search?q=httpss://github.com/sindresorhus/fast-cli)**.
+This analyzer is designed to read the JSON output from **[sindresorhus/fast-cli](https://github.com/sindresorhus/fast-cli)**.
 
 #### Finding Your Paths
 
