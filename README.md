@@ -124,3 +124,36 @@ The program will scan all `.json` files in that folder and print a report.
 ```
 
 -----
+
+### Step 3: Graph the Data (Python Script)
+
+This repository also includes `grapher.py` to visualize your entire data history, including outages, using a log-scale chart for clarity.
+
+#### Installation (One-time setup)
+
+1.  The script requires the `matplotlib` library. You can install it using `pip`:
+    ```bash
+    # On Windows
+    pip install matplotlib
+    
+    # On Linux/macOS
+    pip3 install matplotlib
+    ```
+
+#### Usage
+
+1.  `cd` into the directory where all your JSON files are stored (e.g., `/home/zephrnos/Speedtests`).
+2.  Make sure `grapher.py` is in that same directory.
+3.  Run the Python script:
+
+    ```bash
+    # On Windows
+    python ./grapher.py
+    
+    # On Linux/macOS
+    python3 ./grapher.py
+    ```
+
+4.  The script will find all `speedtest-*.json` files, process them, and save a new file named `speedtest_analysis.png` in the same directory.
+
+-----
