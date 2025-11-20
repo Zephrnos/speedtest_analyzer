@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# --- Configuration ---
+# ---- Configuration ----
 # Set the PATH for nvm/node
 export PATH=/home/zephrnos/.nvm/versions/node/v20.19.5/bin:/usr/bin:/bin
 
