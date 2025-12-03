@@ -1,159 +1,80 @@
-# Speedtest Analyzer
+# Network Topology & Latency Audit
 
-![](example.png)
+This repository contains a suite of tools designed to audit local network performance, specifically focusing on hop-by-hop latency (MTR) and ISP throughput stability.
 
-A simple Rust utility that scans a directory of `fast-cli` JSON reports, analyzes them, and finds the top 3 worst-performing time slots for download, upload, latency, and bufferbloat.
+The goal of this project is to collect comparative data to isolate building-level infrastructure issues from unit-level hardware faults.
 
-This tool is perfect for logging your internet speed every 5 minutes and then quickly finding the data points that prove you're having issues, all without having to manually inspect hundreds of files.
+## Privacy & Safety
+**This tool is designed with strict privacy in mind.**
+* **No Traffic Logging:** This tool **does not** sniff packets, log DNS queries, or record browsing history.
+* **No PII:** No personal identifiable information is collected.
+* **What IS Collected:**
+    * `fast.com` speed metrics (Download/Upload/Latency/Bufferbloat).
+    * `mtr` (My Traceroute) statistics for the route to `8.8.8.8`.
 
------
+## Project Structure
+* `run_audit.sh`: The core data collection script (Bash).
+* `speed_grapher.py` / `mtr_grapher.py`: Visualization tools (Python).
+* `analyzer`: A Rust utility for statistical outlier detection.
 
-## Getting Started
+## Prerequisites
 
-This project is broken into two parts:
+* **Node.js** (for the `fast-cli` speedtest client)
+* **Python 3.8+** (for visualization)
+* **Rust** (optional, for the analyzer tool)
+* **MTR** (`sudo apt install mtr` or equivalent)
 
-1.  **Collecting the Data:** Using `fast-cli` and `cron` to generate the JSON reports.
-2.  **Analyzing the Data:** Using this Rust program to parse those reports.
+## Installation
 
-### Step 1: Collect the Data (The Cron Job)
-
-This analyzer is designed to read the JSON output from **[sindresorhus/fast-cli](https://github.com/sindresorhus/fast-cli)**.
-
-#### Finding Your Paths
-
-Before you edit your crontab, you need to find the **full, absolute paths** for two commands. Cron runs in a minimal environment and doesn't know your normal shell's `PATH`.
-
-1.  **Find the `fast` path:** Run this in your terminal:
-
+1.  **Install the Speedtest Client:**
     ```bash
-    which fast
+    npm install --global fast-cli
     ```
 
-    *Example Output:* `/home/zephrnos/.nvm/versions/node/v20.19.5/bin/fast`
-    (This is the path you'll use in the main command)
-
-2.  **Find the `node` path:** `fast-cli` is a Node.js script, so cron also needs to find `node`.
-
+2.  **Install Python Dependencies:**
+    It is recommended to use a virtual environment.
     ```bash
-    which node
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
     ```
 
-    *Example Output:* `/home/zephrnos/.nvm/versions/node/v20.19.5/bin/node`
-    (You'll use the *directory* part for the `PATH` variable: `/home/zephrnos/.nvm/versions/node/v20.19.5/bin`)
-
-#### Setting Up the Cron Job
-
-1.  Open your crontab editor:
-
-    ```bash
-    crontab -e
-    ```
-
-2.  Add the following two lines. **Use the paths you just found above.** The `PATH` line is **essential** for cron to find the `node` executable.
-
-    ```bash
-    # Set the environment PATH using the directory from `which node`
-    PATH=/home/zephrnos/.nvm/versions/node/v20.19.5/bin:/usr/bin:/bin
-
-    # Every 5 minutes, run fast-cli (using the path from `which fast`)
-    # and save a new timestamped JSON in the Speedtests directory
-    */5 * * * * /home/zephrnos/.nvm/versions/node/v20.19.5/bin/fast --upload --json > /home/zephrnos/Speedtests/speedtest-$(date +\%Y-\%m-\%d_\%H-\%M-\%S).json 2>> /home/zephrnos/Speedtests/cron_errors.log
-    ```
-
-3.  Let this run for a day or two to collect a good amount of data.
-
------
-
-### Step 2: Build and Run the Analyzer
-
-#### Installation
-
-1.  Navigate to this project's root directory (where `Cargo.toml` is).
-2.  Build the optimized executable:
+3.  **Build the Analyzer (Optional):**
     ```bash
     cargo build --release
     ```
-    This will create the program at `target/release/speedtest_analyzer`.
 
-#### Usage
+## Usage: Data Collection
 
-1.  `cd` into the directory where all your JSON files are stored.
+The `run_audit.sh` script is designed to run via `cron` or a systemd timer. It automatically detects your environment paths.
 
-    ```bash
-    cd /home/zephrnos/Speedtests
-    ```
-
-2.  Run the analyzer by calling its full path.
-
-    ```bash
-    # Make sure to change /path/to/ your project's actual location
-    /home/zephrnos/projects/speedtest_analyzer/target/release/speedtest_analyzer
-    ```
-
-    (You could also copy the executable from `target/release` into your `Speedtests` folder and just run `./speedtest_analyzer`).
-
------
-
-## Example Output
-
-The program will scan all `.json` files in that folder and print a report.
-
-```
-!> Skipping empty file: speedtest-2025-11-16_22-45-01.json
---- Found and analyzed 35 valid reports ---
-
-### 3 Worst Download Speeds (Lowest) ###
-  - speedtest-2025-11-16_10-35-01.json: 45.12 Mbps
-  - speedtest-2025-11-16_10-50-01.json: 52.30 Mbps
-  - speedtest-2025-11-16_14-15-01.json: 61.05 Mbps
-
-### 3 Worst Upload Speeds (Lowest) ###
-  - speedtest-2025-11-16_10-35-01.json: 21.40 Mbps
-  - speedtest-2025-11-16_10-50-01.json: 22.15 Mbps
-  - speedtest-2025-11-16_09-05-01.json: 23.00 Mbps
-
-### 3 Worst Latency (Highest) ###
-  - speedtest-2025-11-16_10-35-01.json: 110.45 ms
-  - speedtest-2025-11-16_08-20-01.json: 95.80 ms
-  - speedtest-2025-11-16_10-50-01.json: 92.10 ms
-
-### 3 Worst BufferBloat (Highest) ###
-  - speedtest-2025-11-16_10-35-01.json: 98.12 ms
-  - speedtest-2025-11-16_08-20-01.json: 81.77 ms
-  - speedtest-2025-11-16_10-50-01.json: 79.22 ms
+**Manual Run:**
+```bash
+./run_audit.sh
 ```
 
------
-
-### Step 3: Graph the Data (Python Script)
-
-This repository also includes `grapher.py` to visualize your entire data history, including outages, using a log-scale chart for clarity.
-
-#### Installation (One-time setup)
-
-1.  The script requires the `matplotlib` library. You can install it using `pip`:
+**Scheduled Run (Crontab Example)**
+    Run a full audit every hour, and a lightweight MTR trace every minute.
     ```bash
-    # On Windows
-    pip install matplotlib
-    
-    # On Linux/macOS
-    pip3 install matplotlib
+    # Open crontab
+    crontab -e
+
+    # Add these lines (Adjust paths as necessary)
+    # Run MTR trace every minute
+    * * * * * /path/to/repo/run_audit.sh --mtr
+
+    # Run Speedtest every hour
+    0 * * * * /path/to/repo/run_audit.sh --speed
     ```
 
-#### Usage
+## Usage: Visualization
 
-1.  `cd` into the directory where all your JSON files are stored (e.g., `/home/zephrnos/Speedtests`).
-2.  Make sure `grapher.py` is in that same directory.
-3.  Run the Python script:
+To generate graphs from the collected logs:
 
-    ```bash
-    # On Windows
-    python ./grapher.py
-    
-    # On Linux/macOS
-    python3 ./grapher.py
-    ```
+```bash
+# Generate Speedtest Graphs
+python3 speed_grapher.py
 
-4.  The script will find all `speedtest-*.json` files, process them, and save a new file named `speedtest_analysis.png` in the same directory.
-
------
+# Generate MTR Latency Graphs
+python3 mtr_grapher.py
+```
